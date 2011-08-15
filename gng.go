@@ -136,6 +136,19 @@ func Signal() []float64 {
 	return []float64{x, y}
 }
 
+func SignalIn() []float64 {
+    // Function to retrieve the signal from the standard input.
+    // One point format is : label, x, y
+    // The function returns only (x,y)
+    var x, y float64
+    var label string
+    fmt.Scanf("%s,", &label)
+    fmt.Scanf("%f,", &x)
+    fmt.Scanf("%f", &y)
+    return []float64{x, y} 
+}
+
+
 func main() {
 	var lTmax = flag.Uint("tmax", 1000, "Maximum number of iterations.")
 	var lTau = flag.Uint("tau", 100, "Number of iterations between two insertion.")
@@ -153,7 +166,7 @@ func main() {
 	lGNG.AddEdge(node1, node2)
 
 	for t := uint(1); t <= *lTmax; t++ {
-		signal := Signal()
+		signal := SignalIn()
 
 		var g1, g2 *Node
 		min1, min2 := math.MaxFloat64, math.MaxFloat64
@@ -240,7 +253,7 @@ func main() {
 
 	if *lFilename != "" {
 		// Outputs the resulting nodes and edges in a JSON dictionary for plotting
-		file, _ := os.Open(*lFilename, os.O_WRONLY|os.O_CREAT|os.O_TRUNC, 0655)
+		file, _ := os.OpenFile(*lFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0655)
 		defer file.Close()
 		encoder := json.NewEncoder(file)
 		encoder.Encode(lGNG)
