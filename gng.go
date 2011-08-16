@@ -7,7 +7,6 @@ import "json"
 import "math"
 import "os"
 import "rand"
-import "syscall"
 
 type Node struct {
 	error     float64
@@ -155,21 +154,19 @@ func main() {
 	var lAlpha = flag.Float64("alpha", 0.5, "Winner forgetting rate.")
 	var lDelta = flag.Float64("delta", 0.995, "Forgetting rate.")
 	var lOutput = flag.String("output", "", "Resulting graph output file.")
-	var lInput = flag.String("input", "", "CSV dataset filename.")
+	var lData = flag.String("input", "", "CSV dataset filename.")
 	flag.Parse()
 
-	var file *os.File
-	if *lInput != "" {
+	var file = os.Stdin
+	if *lData != "" {
 		var err os.Error
-		file, err = os.Open(*lInput)
+		file, err = os.Open(*lData)
 		defer file.Close()
 		if err != nil {
 			fmt.Printf("Can't open dataset file; err=%s\n", err.String())
 			os.Exit(1)
 		}
-	} else {
-		file = os.NewFile(syscall.Stdin, "/dev/stdin")
-	}
+	} 
 	reader := csv.NewReader(file)
 	reader.TrimLeadingSpace = true
 
@@ -268,6 +265,8 @@ func main() {
 		for node := range lGNG.nodes {
 			node.error *= *lDelta
 		}
+
+		// Retrieve next signal
 		t++
 		signal, err = Signal(reader)
 		if err != nil {
