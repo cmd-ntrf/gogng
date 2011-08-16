@@ -95,43 +95,21 @@ func (this *Graph) RemoveEdge(edge *Edge) {
 }
 
 func (this *Graph) MarshalJSON() ([]byte, os.Error) {
-	var output string
-	output += fmt.Sprintln("{")
-	output += fmt.Sprintln("\t\"nodes\":")
-	output += fmt.Sprintln("\t{")
-	counter := 0
+	graph := make(map[string] interface{})
+	nodes := make(map[string] []float64)
 	for node := range this.nodes {
-		counter++
-		output += fmt.Sprintf("\t\t\"%p\" : [", node)
-		for idx, value := range node.point {
-			output += fmt.Sprintf("%v", value)
-			if idx < len(node.point)-1 {
-				output += fmt.Sprintf(", ")
-			}
-		}
-		output += fmt.Sprintf("]")
-		if counter != len(this.nodes) {
-			output += fmt.Sprintln(",")
-		}
+		nodes[fmt.Sprintf("%p", node)] = node.point
 	}
-	output += fmt.Sprintln("\n\t},")
-	output += fmt.Sprintln("\t\"edges\":")
-	counter = 0
+	edges := make([][2] string, len(this.edges))
+	counter := 0
 	for edge := range this.edges {
+		edges[counter][0] = fmt.Sprintf("%p", edge.vertex1)
+		edges[counter][1] = fmt.Sprintf("%p", edge.vertex2)
 		counter++
-		if counter != 1 {
-			output += fmt.Sprintf("\t\t[\"%p\", \"%p\"]", edge.vertex1, edge.vertex2)
-		} else {
-			output += fmt.Sprintf("\t\t[[\"%p\", \"%p\"]", edge.vertex1, edge.vertex2)
-		}
-		if counter != len(this.edges) {
-			output += fmt.Sprintln(",")
-		}
 	}
-	output += fmt.Sprintln("]")
-	output += fmt.Sprintln("}")
-
-	return []byte(output), nil
+	graph["nodes"] = nodes
+	graph["edges"] = edges
+	return json.Marshal(graph)
 }
 
 func Signal(reader *csv.Reader) ([]float64, os.Error) {
@@ -274,11 +252,17 @@ func main() {
 		}
 	}
 
+	// Outputs the resulting nodes and edges in a JSON dictionary for plotting
+	file = os.Stdout
 	if *lOutput != "" {
-		// Outputs the resulting nodes and edges in a JSON dictionary for plotting
-		file, _ := os.OpenFile(*lOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0655)
+		var err os.Error
+		file, err = os.OpenFile(*lOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0655)
 		defer file.Close()
-		encoder := json.NewEncoder(file)
-		encoder.Encode(lGNG)
+		if err != nil {
+			fmt.Printf("Can't open dataset file; err=%s\n", err.String())
+			os.Exit(1)
+		}
 	}
+	encoder := json.NewEncoder(file)
+	encoder.Encode(lGNG)
 }
