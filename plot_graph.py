@@ -4,10 +4,14 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import sys
 
+
 try:
     graph = json.load(open(sys.argv[1], 'r'))
+except IndexError:
+    graph = json.load(sys.stdin)
 except:
     print "Unable to open file."
+    exit()
 
 G = nx.Graph()
 G.add_edges_from(graph["edges"])
