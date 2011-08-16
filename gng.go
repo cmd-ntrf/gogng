@@ -1,11 +1,13 @@
 package main
 
+import "csv"
 import "flag"
 import "fmt"
 import "json"
 import "math"
 import "os"
 import "rand"
+import "syscall"
 
 type Node struct {
 	error     float64
@@ -19,6 +21,14 @@ func NewNode(point []float64, error float64) (node *Node) {
 	node.error = error
 	node.neighbors = make(map[*Node]*Edge)
 	return
+}
+
+func NewRandomNode(ndim int) (*Node){
+	point := make([]float64, ndim)
+	for i := 0; i < ndim; i++ {
+		point[i] = rand.Float64()
+	}
+	return NewNode(point, 0)
 }
 
 type Edge struct {
@@ -125,49 +135,58 @@ func (this *Graph) MarshalJSON() ([]byte, os.Error) {
 	return []byte(output), nil
 }
 
-func Signal() []float64 {
-	x := rand.Float64()*20 - 10
-	var y float64
-	if x > 0 {
-		y = math.Sin(x) + 2.5
-	} else {
-		y = math.Sin(x) - 2.5
+func Signal(reader *csv.Reader) ([]float64, os.Error) {
+	str, err := reader.Read()
+	if err != nil {
+		return nil, err
+	} 
+	point := make([]float64, len(str))
+	for i := 0; i < len(str); i++ {
+		fmt.Sscan(str[i], &point[i])
 	}
-	return []float64{x, y}
+	return point, nil
 }
-
-func SignalIn() []float64 {
-    // Function to retrieve the signal from the standard input.
-    // One point format is : label, x, y
-    // The function returns only (x,y)
-    var x, y float64
-    var label string
-    fmt.Scanf("%s,", &label)
-    fmt.Scanf("%f,", &x)
-    fmt.Scanf("%f", &y)
-    return []float64{x, y} 
-}
-
 
 func main() {
-	var lTmax = flag.Uint("tmax", 1000, "Maximum number of iterations.")
 	var lTau = flag.Uint("tau", 100, "Number of iterations between two insertion.")
 	var lEthag = flag.Float64("ethag", 0.2, "Winner learning rate.")
 	var lEthav = flag.Float64("ethav", 0.006, "Winner's neighbors learning rate.")
 	var lAmax = flag.Uint("amax", 50, "Maximum edge's age.")
 	var lAlpha = flag.Float64("alpha", 0.5, "Winner forgetting rate.")
 	var lDelta = flag.Float64("delta", 0.995, "Forgetting rate.")
-	var lFilename = flag.String("file", "", "Resulting graph output file.")
+	var lOutput = flag.String("output", "", "Resulting graph output file.")
+	var lInput = flag.String("input", "", "CSV dataset filename.")
 	flag.Parse()
 
+	var file *os.File
+	if *lInput != "" {
+		var err os.Error
+		file, err = os.Open(*lInput)
+		defer file.Close()
+		if err != nil {
+			fmt.Printf("Can't open dataset file; err=%s\n", err.String())
+			os.Exit(1)
+		}
+	} else {
+		file = os.NewFile(syscall.Stdin, "/dev/stdin")
+	}
+	reader := csv.NewReader(file)
+	reader.TrimLeadingSpace = true
+
+	signal, err := Signal(reader)
+	if err != nil {
+		fmt.Printf("Error while reading dataset, err=%s\n", err.String())
+		os.Exit(1)
+	}
+
+	ndim := len(signal)
 	lGNG := NewGraph()
-	node1 := NewNode([]float64{rand.Float64(), rand.Float64()}, 0)
-	node2 := NewNode([]float64{rand.Float64(), rand.Float64()}, 0)
+	node1 := NewRandomNode(ndim)
+	node2 := NewRandomNode(ndim)
 	lGNG.AddEdge(node1, node2)
 
-	for t := uint(1); t <= *lTmax; t++ {
-		signal := SignalIn()
-
+	t := uint(1)
+	for {
 		var g1, g2 *Node
 		min1, min2 := math.MaxFloat64, math.MaxFloat64
 
@@ -249,11 +268,16 @@ func main() {
 		for node := range lGNG.nodes {
 			node.error *= *lDelta
 		}
+		t++
+		signal, err = Signal(reader)
+		if err != nil {
+			break
+		}
 	}
 
-	if *lFilename != "" {
+	if *lOutput != "" {
 		// Outputs the resulting nodes and edges in a JSON dictionary for plotting
-		file, _ := os.OpenFile(*lFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0655)
+		file, _ := os.OpenFile(*lOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0655)
 		defer file.Close()
 		encoder := json.NewEncoder(file)
 		encoder.Encode(lGNG)
