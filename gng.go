@@ -112,11 +112,33 @@ func (this *Graph) MarshalJSON() ([]byte, os.Error) {
 	return json.Marshal(graph)
 }
 
+func (this *Graph) UnmarshalJSON(input []byte) (os.Error) {
+	graph_map := make(map[string] interface{})
+	json.Unmarshal(input, &graph_map)
+	nodes_map := graph_map["nodes"].(map[string] interface{})
+	edges_map := graph_map["edges"].([]interface{})
+	nodes := make(map[string] *Node)
+
+	for node, point_itf := range nodes_map {
+		point := make([]float64, len(point_itf.([]interface{})))
+		for i, value := range point_itf.([]interface{}) {
+			point[i] = value.(float64)
+		}
+		nodes[node] = NewNode(point, 0)
+	}
+	for _, edge := range edges_map {
+		node1 := nodes[edge.([]interface{})[0].(string)]
+		node2 := nodes[edge.([]interface{})[1].(string)]
+		this.AddEdge(node1, node2)
+	}
+	return nil
+}
+
 func Signal(reader *csv.Reader) ([]float64, os.Error) {
 	str, err := reader.Read()
 	if err != nil {
 		return nil, err
-	} 
+	}
 	point := make([]float64, len(str))
 	for i := 0; i < len(str); i++ {
 		fmt.Sscan(str[i], &point[i])
@@ -132,7 +154,8 @@ func main() {
 	var lAlpha = flag.Float64("alpha", 0.5, "Winner forgetting rate.")
 	var lDelta = flag.Float64("delta", 0.995, "Forgetting rate.")
 	var lOutput = flag.String("output", "", "Resulting graph output file.")
-	var lData = flag.String("input", "", "CSV dataset filename.")
+	var lInput = flag.String("input", "", "Initial topology file.")
+	var lData = flag.String("data", "", "CSV dataset filename.")
 	flag.Parse()
 
 	var file = os.Stdin
@@ -144,7 +167,7 @@ func main() {
 			fmt.Printf("Can't open dataset file; err=%s\n", err.String())
 			os.Exit(1)
 		}
-	} 
+	}
 	reader := csv.NewReader(file)
 	reader.TrimLeadingSpace = true
 
@@ -154,11 +177,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	ndim := len(signal)
 	lGNG := NewGraph()
-	node1 := NewRandomNode(ndim)
-	node2 := NewRandomNode(ndim)
-	lGNG.AddEdge(node1, node2)
+	if *lInput != "" {
+		var err os.Error
+		file, err = os.Open(*lInput)
+		defer file.Close()
+		if err != nil {
+			fmt.Printf("Can't open input topology file; err=%s\n", err.String())
+			os.Exit(1)
+		}
+		decoder := json.NewDecoder(file)
+		decoder.Decode(lGNG)
+	} else {
+		ndim := len(signal)
+		node1 := NewRandomNode(ndim)
+		node2 := NewRandomNode(ndim)
+		lGNG.AddEdge(node1, node2)
+	}
 
 	t := uint(1)
 	for {
