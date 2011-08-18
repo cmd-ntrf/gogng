@@ -4,6 +4,7 @@ import "csv"
 import "flag"
 import "fmt"
 import "json"
+import "log"
 import "math"
 import "os"
 import "rand"
@@ -169,8 +170,7 @@ func main() {
 		file, err = os.Open(*lData)
 		defer file.Close()
 		if err != nil {
-			fmt.Printf("Can't open dataset file; err=%s\n", err.String())
-			os.Exit(1)
+			log.Fatalf("Can't open dataset file; err=%s\n", err.String())
 		}
 	}
 	reader := csv.NewReader(file)
@@ -178,8 +178,7 @@ func main() {
 
 	signal, err := Signal(reader)
 	if err != nil {
-		fmt.Printf("Error while reading dataset, err=%s\n", err.String())
-		os.Exit(1)
+		log.Fatalf("Error while reading dataset, err=%s\n", err.String())
 	}
 
 	lGNG := NewGraph()
@@ -188,8 +187,7 @@ func main() {
 		file, err = os.Open(*lInput)
 		defer file.Close()
 		if err != nil {
-			fmt.Printf("Can't open input topology file; err=%s\n", err.String())
-			os.Exit(1)
+			log.Fatalf("Can't open input topology file; err=%s\n", err.String())
 		}
 		decoder := json.NewDecoder(file)
 		decoder.Decode(lGNG)
@@ -290,8 +288,7 @@ func main() {
 		if err == os.EOF {
 			break
 		} else if err != nil {
-			fmt.Printf("Error while reading dataset, err=%s\n", err.String())
-			os.Exit(1)
+			log.Fatalf("Error while reading dataset, err=%s\n", err.String())
 		}
 	}
 
@@ -302,8 +299,7 @@ func main() {
 		file, err = os.OpenFile(*lOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0655)
 		defer file.Close()
 		if err != nil {
-			fmt.Printf("Can't open dataset file; err=%s\n", err.String())
-			os.Exit(1)
+			log.Fatalf("Can't open output topology file; err=%s\n", err.String())
 		}
 	}
 	encoder := json.NewEncoder(file)
