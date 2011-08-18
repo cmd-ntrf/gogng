@@ -287,8 +287,11 @@ func main() {
 		// Retrieve next signal
 		t++
 		signal, err = Signal(reader)
-		if err != nil {
+		if err == os.EOF {
 			break
+		} else if err != nil {
+			fmt.Printf("Error while reading dataset, err=%s\n", err.String())
+			os.Exit(1)
 		}
 	}
 
