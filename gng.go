@@ -7,6 +7,7 @@ import "json"
 import "math"
 import "os"
 import "rand"
+import "strconv"
 
 type Node struct {
 	error     float64
@@ -135,13 +136,17 @@ func (this *Graph) UnmarshalJSON(input []byte) (os.Error) {
 }
 
 func Signal(reader *csv.Reader) ([]float64, os.Error) {
-	str, err := reader.Read()
+	fields, err := reader.Read()
 	if err != nil {
 		return nil, err
 	}
-	point := make([]float64, len(str))
-	for i := 0; i < len(str); i++ {
-		fmt.Sscan(str[i], &point[i])
+	ndim := len(fields)
+	point := make([]float64, ndim)
+	for i := 0; i < ndim; i++ {
+		point[i], err = strconv.Atof64(fields[i])
+		if err != nil {
+			return nil, err
+		}
 	}
 	return point, nil
 }
