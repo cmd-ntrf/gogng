@@ -1,11 +1,11 @@
 GC = 6g
 GL = 6l
 
-all: gng 
+all: gogng 
 
-gng: gng.go
+gogng: gng.go
 	$(GC) gng.go
-	$(GL) -o gng gng.6
+	$(GL) -o gogng gng.6
 
 clean6:
 	rm -f *.6
