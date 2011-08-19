@@ -99,18 +99,22 @@ func (this *Graph) RemoveEdge(edge *Edge) {
 func (this *Graph) MarshalJSON() ([]byte, os.Error) {
 	graph := make(map[string] interface{})
 	nodes := make(map[string] []float64)
+	errors := make(map[string] float64)
 	for node := range this.nodes {
 		nodes[fmt.Sprintf("%p", node)] = node.point
+		errors[fmt.Sprintf("%p", node)] = node.error
 	}
-	edges := make([][2] string, len(this.edges))
-	counter := 0
+	edges := make(map[string] [2]string)
+	ages := make(map[string] uint)
 	for edge := range this.edges {
-		edges[counter][0] = fmt.Sprintf("%p", edge.vertex1)
-		edges[counter][1] = fmt.Sprintf("%p", edge.vertex2)
-		counter++
+		var edge_name string = fmt.Sprintf("%p", edge)
+		edges[edge_name] = [2]string{fmt.Sprintf("%p", edge.vertex1), fmt.Sprintf("%p", edge.vertex2)}
+		ages[edge_name] = edge.age 
 	}
 	graph["nodes"] = nodes
+	graph["errors"] = errors
 	graph["edges"] = edges
+	graph["ages"] = ages
 	return json.Marshal(graph)
 }
 
@@ -118,7 +122,9 @@ func (this *Graph) UnmarshalJSON(input []byte) (os.Error) {
 	graph_map := make(map[string] interface{})
 	json.Unmarshal(input, &graph_map)
 	nodes_map := graph_map["nodes"].(map[string] interface{})
-	edges_map := graph_map["edges"].([]interface{})
+	errors_map := graph_map["errors"].(map[string] interface{})
+	edges_map := graph_map["edges"].(map[string] interface{})
+	ages_map := graph_map["ages"].(map[string] interface{})
 	nodes := make(map[string] *Node)
 
 	for node, point_itf := range nodes_map {
@@ -127,11 +133,13 @@ func (this *Graph) UnmarshalJSON(input []byte) (os.Error) {
 			point[i] = value.(float64)
 		}
 		nodes[node] = NewNode(point, 0)
+		nodes[node].error = errors_map[node].(float64)
 	}
-	for _, edge := range edges_map {
-		node1 := nodes[edge.([]interface{})[0].(string)]
-		node2 := nodes[edge.([]interface{})[1].(string)]
-		this.AddEdge(node1, node2)
+	for edge, vertex := range edges_map {
+		node1 := nodes[vertex.([]interface{})[0].(string)]
+		node2 := nodes[vertex.([]interface{})[1].(string)]
+		new_edge := this.AddEdge(node1, node2)
+		new_edge.age = uint(ages_map[edge].(float64))
 	}
 	return nil
 }

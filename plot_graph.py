@@ -14,7 +14,7 @@ except:
     exit()
 
 G = nx.Graph()
-G.add_edges_from(graph["edges"])
+G.add_edges_from(graph["edges"].itervalues())
 nx.draw_networkx_edges(G,graph["nodes"],alpha=0.5,width=2)
 nx.draw_networkx_nodes(G,graph["nodes"],node_size=4,node_color='r')
 
