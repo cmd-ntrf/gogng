@@ -304,7 +304,7 @@ func main() {
 	file = os.Stdout
 	if *lOutput != "" {
 		var err os.Error
-		file, err = os.OpenFile(*lOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0655)
+		file, err = os.OpenFile(*lOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		defer file.Close()
 		if err != nil {
 			log.Fatalf("Can't open output topology file; err=%s\n", err.String())
