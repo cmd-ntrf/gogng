@@ -10,16 +10,18 @@ If the signal is in 2-D, the resulting topology can be drawn with the provided s
 
 ## Requirements
 
-`plot_graph`
+Requirements for `plot_graph` :
+
 * matplotlib 
 * networkx
 
-`plot_graph3D`
+Requirement for `plot_graph3D` :
+
 * networkx
 * vtk
 * mayavi
-	* Enthought Tool Suite : mayavi, traits, traitsui, envisage, apptools
-	* configobj
+  * Enthought Tool Suite : mayavi, traits, traitsui, envisage, apptools
+  * configobj
 
 ## Usage 
 
