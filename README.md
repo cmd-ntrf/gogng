@@ -15,7 +15,7 @@ Requirements for `plot_graph` :
 * matplotlib 
 * networkx
 
-Requirement for `plot_graph3D` :
+Requirements for `plot_graph3D` :
 
 * networkx
 * vtk
