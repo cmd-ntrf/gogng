@@ -15,9 +15,10 @@ Requirements for `plot_graph` :
 * matplotlib 
 * networkx
 
-Requirement for `plot_graph3D` :
+Requirements for `plot_graph3D` :
 
 * networkx
+* numpy
 * vtk
 * mayavi
   * Enthought Tool Suite : mayavi, traits, traitsui, envisage, apptools
