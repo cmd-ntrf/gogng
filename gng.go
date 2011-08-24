@@ -162,13 +162,14 @@ func Signal(reader *csv.Reader) ([]float64, os.Error) {
 
 func main() {
 	var lTau = flag.Uint("tau", 100, "Number of iterations between two insertion.")
+	var lOperiod = flag.Uint("operiod", 0, "Period of the topology output.")
 	var lEthag = flag.Float64("ethag", 0.2, "Winner learning rate.")
 	var lEthav = flag.Float64("ethav", 0.006, "Winner's neighbors learning rate.")
 	var lAmax = flag.Uint("amax", 50, "Maximum edge's age.")
 	var lAlpha = flag.Float64("alpha", 0.5, "Winner forgetting rate.")
 	var lDelta = flag.Float64("delta", 0.995, "Forgetting rate.")
-	var lOutput = flag.String("output", "", "Resulting graph output file.")
-	var lInput = flag.String("input", "", "Initial topology file.")
+	var lOutput = flag.String("output", "", "Final topology output file.")
+	var lInput = flag.String("input", "", "Initial topology input file.")
 	var lData = flag.String("data", "", "CSV dataset filename.")
 	flag.Parse()
 
@@ -288,6 +289,11 @@ func main() {
 		// Reduce node error
 		for node := range lGNG.nodes {
 			node.error *= *lDelta
+		}
+
+		if *lOperiod != 0 && (t % *lOperiod) == 0 {
+			encoder := json.NewEncoder(os.Stdout)
+			encoder.Encode(lGNG)
 		}
 
 		// Retrieve next signal
