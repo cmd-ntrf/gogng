@@ -1,13 +1,14 @@
 package main
 
-import "csv"
+import "encoding/csv"
+import "encoding/json"
 import "flag"
 import "fmt"
-import "json"
+import "io"
 import "log"
 import "math"
+import "math/rand"
 import "os"
-import "rand"
 import "strconv"
 
 type Node struct {
@@ -83,20 +84,21 @@ func (this *Graph) RemoveEdge(edge *Edge) {
 	vertex1 := edge.vertex1
 	vertex2 := edge.vertex2
 
-	vertex1.neighbors[vertex2] = nil, false
-	vertex2.neighbors[vertex1] = nil, false
+	// vertex1.neighbors[vertex2] = nil, false
+	delete(vertex1.neighbors, vertex2)
+	delete(vertex2.neighbors, vertex1)
 
 	if len(vertex1.neighbors) == 0 {
-		this.nodes[vertex1] = false, false
+		delete(this.nodes, vertex1)
 	}
 	if len(vertex2.neighbors) == 0 {
-		this.nodes[vertex2] = false, false
+		delete(this.nodes, vertex2)
 	}
-	this.edges[edge] = false, false
+	delete(this.edges, edge)
 	return
 }
 
-func (this *Graph) MarshalJSON() ([]byte, os.Error) {
+func (this *Graph) MarshalJSON() ([]byte, error) {
 	graph := make(map[string] interface{})
 	nodes := make(map[string] []float64)
 	errors := make(map[string] float64)
@@ -118,7 +120,7 @@ func (this *Graph) MarshalJSON() ([]byte, os.Error) {
 	return json.Marshal(graph)
 }
 
-func (this *Graph) UnmarshalJSON(input []byte) (os.Error) {
+func (this *Graph) UnmarshalJSON(input []byte) (error) {
 	graph_map := make(map[string] interface{})
 	json.Unmarshal(input, &graph_map)
 	nodes_map := graph_map["nodes"].(map[string] interface{})
@@ -144,7 +146,7 @@ func (this *Graph) UnmarshalJSON(input []byte) (os.Error) {
 	return nil
 }
 
-func Signal(reader *csv.Reader) ([]float64, os.Error) {
+func Signal(reader *csv.Reader) ([]float64, error) {
 	fields, err := reader.Read()
 	if err != nil {
 		return nil, err
@@ -152,7 +154,7 @@ func Signal(reader *csv.Reader) ([]float64, os.Error) {
 	ndim := len(fields)
 	point := make([]float64, ndim)
 	for i := 0; i < ndim; i++ {
-		point[i], err = strconv.Atof64(fields[i])
+		point[i], err = strconv.ParseFloat(fields[i], 64)
 		if err != nil {
 			return nil, err
 		}
@@ -175,11 +177,11 @@ func main() {
 
 	var file = os.Stdin
 	if *lData != "" {
-		var err os.Error
+		var err error
 		file, err = os.Open(*lData)
 		defer file.Close()
 		if err != nil {
-			log.Fatalf("Can't open dataset file; err=%s\n", err.String())
+			log.Fatalf("Can't open dataset file; err=%s\n", err.Error())
 		}
 	}
 	reader := csv.NewReader(file)
@@ -187,16 +189,16 @@ func main() {
 
 	signal, err := Signal(reader)
 	if err != nil {
-		log.Fatalf("Error while reading dataset, err=%s\n", err.String())
+		log.Fatalf("Error while reading dataset, err=%s\n", err.Error())
 	}
 
 	lGNG := NewGraph()
 	if *lInput != "" {
-		var err os.Error
+		var err error
 		file, err = os.Open(*lInput)
 		defer file.Close()
 		if err != nil {
-			log.Fatalf("Can't open input topology file; err=%s\n", err.String())
+			log.Fatalf("Can't open input topology file; err=%s\n", err.Error())
 		}
 		decoder := json.NewDecoder(file)
 		decoder.Decode(lGNG)
@@ -299,21 +301,21 @@ func main() {
 		// Retrieve next signal
 		t++
 		signal, err = Signal(reader)
-		if err == os.EOF {
+		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Fatalf("Error while reading dataset, err=%s\n", err.String())
+			log.Fatalf("Error while reading dataset, err=%s\n", err.Error())
 		}
 	}
 
 	// Outputs the resulting nodes and edges in a JSON dictionary for plotting
 	file = os.Stdout
 	if *lOutput != "" {
-		var err os.Error
+		var err error
 		file, err = os.OpenFile(*lOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		defer file.Close()
 		if err != nil {
-			log.Fatalf("Can't open output topology file; err=%s\n", err.String())
+			log.Fatalf("Can't open output topology file; err=%s\n", err.Error())
 		}
 	}
 	encoder := json.NewEncoder(file)
